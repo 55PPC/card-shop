@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  DELIVERED
+  EXPIRED
+  CANCELLED
+  REFUNDED
+}
+
+enum InventoryStatus {
+  AVAILABLE
+  LOCKED
+  DELIVERED
+  INVALID
+}
+
+enum PaymentChannelType {
+  manual
+  epay
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  enabled      Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  enabled     Boolean   @default(true)
+  sort        Int       @default(0)
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Product {
+  id            String          @id @default(cuid())
+  categoryId    String
+  category      Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  title         String
+  slug          String          @unique
+  description   String?
+  price         Decimal         @db.Decimal(10, 2)
+  originalPrice Decimal?        @db.Decimal(10, 2)
+  stock         Int             @default(0)
+  imageUrl      String?
+  icon          String?
+  enabled       Boolean         @default(true)
+  sort          Int             @default(0)
+  inventory     InventoryItem[]
+  orderItems    OrderItem[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([categoryId])
+  @@index([enabled, sort])
+}
+
+model InventoryItem {
+  id          String          @id @default(cuid())
+  productId   String
+  product     Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderId     String?
+  order       Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  secret      String
+  status      InventoryStatus @default(AVAILABLE)
+  lockedAt    DateTime?
+  deliveredAt DateTime?
+  note        String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([productId, status])
+  @@index([orderId])
+}
+
+model Order {
+  id                String          @id @default(cuid())
+  orderNo           String          @unique
+  email             String
+  queryPasswordHash String
+  status            OrderStatus     @default(PENDING)
+  subtotal          Decimal         @db.Decimal(10, 2)
+  discountTotal     Decimal         @default(0) @db.Decimal(10, 2)
+  total             Decimal         @db.Decimal(10, 2)
+  deliverySummary   String?
+  deliveryItems     Json?
+  couponCode        String?
+  paidAt            DateTime?
+  deliveredAt       DateTime?
+  expiresAt         DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  items             OrderItem[]
+  inventoryItems    InventoryItem[]
+  paymentRecords    PaymentRecord[]
+
+  @@index([email])
+  @@index([status, createdAt])
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productTitle String
+  unitPrice    Decimal  @db.Decimal(10, 2)
+  quantity     Int
+  total        Decimal  @db.Decimal(10, 2)
+  createdAt    DateTime @default(now())
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model PaymentChannel {
+  id             String             @id @default(cuid())
+  name           String
+  code           String             @unique
+  type           PaymentChannelType
+  config         Json
+  enabled        Boolean            @default(true)
+  sort           Int                @default(0)
+  paymentRecords PaymentRecord[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+model PaymentRecord {
+  id                    String         @id @default(cuid())
+  orderId               String
+  order                 Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  paymentChannelId      String
+  paymentChannel        PaymentChannel @relation(fields: [paymentChannelId], references: [id], onDelete: Restrict)
+  amount                Decimal        @db.Decimal(10, 2)
+  status                String         @default("created")
+  providerTransactionId String?
+  providerPayload       Json?
+  paidAt                DateTime?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@index([orderId])
+  @@index([paymentChannelId])
+  @@index([providerTransactionId])
+}
+
+model Coupon {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  description     String?
+  discountPercent Int?
+  discountAmount  Decimal?  @db.Decimal(10, 2)
+  enabled         Boolean   @default(true)
+  maxUses         Int?
+  usedCount       Int       @default(0)
+  startsAt        DateTime?
+  endsAt          DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  enabled   Boolean  @default(true)
+  sort      Int      @default(0)
+  startsAt  DateTime?
+  endsAt    DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SupportMessage {
+  id        String   @id @default(cuid())
+  name      String?
+  contact   String?
+  email     String?
+  message   String
+  source    String?
+  handled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([handled, createdAt])
+}
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
