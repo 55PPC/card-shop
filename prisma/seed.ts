@@ -55,8 +55,13 @@ const sampleProducts = [
 ];
 
 async function main() {
-  const adminEmail = process.env.ADMIN_EMAIL ?? "admin@example.com";
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "change-me-now";
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPassword) {
+    throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD must be set before running prisma/seed.ts");
+  }
+
   const passwordHash = await bcrypt.hash(adminPassword, 12);
 
   await prisma.adminUser.upsert({
@@ -106,7 +111,6 @@ async function main() {
         description: product.description,
         price: product.price,
         originalPrice: product.originalPrice,
-        stock: product.slug === "chatgpt-plus-shared" ? 20 : 0,
         icon: product.icon,
         enabled: true,
         sort: product.sort
@@ -118,7 +122,7 @@ async function main() {
         description: product.description,
         price: product.price,
         originalPrice: product.originalPrice,
-        stock: product.slug === "chatgpt-plus-shared" ? 20 : 0,
+        stock: 0,
         icon: product.icon,
         enabled: true,
         sort: product.sort
@@ -134,10 +138,10 @@ async function main() {
     where: { productId: inventoryProduct.id }
   });
 
-  if (existingInventoryCount < 20) {
+  if (existingInventoryCount === 0) {
     await prisma.inventoryItem.createMany({
-      data: Array.from({ length: 20 - existingInventoryCount }, (_, index) => {
-        const itemNumber = existingInventoryCount + index + 1;
+      data: Array.from({ length: 20 }, (_, index) => {
+        const itemNumber = index + 1;
 
         return {
           productId: inventoryProduct.id,
@@ -146,6 +150,18 @@ async function main() {
       })
     });
   }
+
+  const availableInventoryCount = await prisma.inventoryItem.count({
+    where: {
+      productId: inventoryProduct.id,
+      status: "AVAILABLE"
+    }
+  });
+
+  await prisma.product.update({
+    where: { id: inventoryProduct.id },
+    data: { stock: availableInventoryCount }
+  });
 
   await prisma.paymentChannel.upsert({
     where: { code: "manual" },

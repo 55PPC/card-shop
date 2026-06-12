@@ -163,6 +163,7 @@ model PaymentRecord {
   @@index([orderId])
   @@index([paymentChannelId])
   @@index([providerTransactionId])
+  @@unique([paymentChannelId, providerTransactionId])
 }
 
 model Coupon {
