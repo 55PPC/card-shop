@@ -66,7 +66,7 @@ export function setAdminSessionCookie(response: NextResponse, token: string) {
     value: token,
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookie(),
     path: "/",
     maxAge: SESSION_MAX_AGE_SECONDS
   });
@@ -78,7 +78,7 @@ export function clearAdminSessionCookie(response: NextResponse) {
     value: "",
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookie(),
     path: "/",
     maxAge: 0
   });
@@ -145,4 +145,12 @@ function sessionSecret() {
   }
 
   return "local-dev-session-secret-change-before-production";
+}
+
+function shouldUseSecureCookie() {
+  if (process.env.SESSION_COOKIE_SECURE) {
+    return process.env.SESSION_COOKIE_SECURE === "true";
+  }
+
+  return process.env.NEXT_PUBLIC_SITE_URL?.startsWith("https://") ?? false;
 }
