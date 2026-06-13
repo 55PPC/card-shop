@@ -1,4 +1,4 @@
-import { InventoryStatus, OrderStatus, Prisma, type PrismaClient } from "@prisma/client";
+import { InventoryStatus, OrderStatus, Prisma } from "@prisma/client";
 import { prisma } from "../db";
 import { hashPassword } from "../auth/password";
 import { generateOrderNo } from "./order-number";
@@ -12,10 +12,65 @@ export type CreateOrderInput = {
 };
 
 export async function createOrder(input: CreateOrderInput) {
-  return createOrderWithClient(prisma, input);
+  return createOrderWithClient(prisma as unknown as OrderTransactionRunner, input);
 }
 
-export async function createOrderWithClient(client: PrismaClient, input: CreateOrderInput) {
+type OrderTransactionClient = {
+  $queryRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql): Promise<T>;
+  product: {
+    findUnique(args: { where: { id: string } }): Promise<{
+      id: string;
+      enabled: boolean;
+      title: string;
+      price: Prisma.Decimal | string | number;
+    } | null>;
+    update(args: { where: { id: string }; data: { stock: number } }): Promise<unknown>;
+  };
+  order: {
+    create(args: {
+      data: {
+        orderNo: string;
+        email: string;
+        queryPasswordHash: string;
+        status: OrderStatus;
+        subtotal: Prisma.Decimal;
+        discountTotal: Prisma.Decimal;
+        total: Prisma.Decimal;
+        couponCode?: string | null;
+        items: {
+          create: {
+            productId: string;
+            productTitle: string;
+            unitPrice: Prisma.Decimal | string | number;
+            quantity: number;
+            total: Prisma.Decimal;
+          };
+        };
+      };
+      include: { items: true };
+    }): Promise<{
+      id: string;
+      orderNo: string;
+      items: Array<{ productId: string; productTitle: string; quantity: number }>;
+    }>;
+  };
+  inventoryItem: {
+    count(args: { where: { productId: string; status: InventoryStatus } }): Promise<number>;
+  };
+};
+
+type OrderTransactionRunner<TTx extends OrderTransactionClient = OrderTransactionClient> = {
+  $transaction<T>(callback: (tx: TTx) => Promise<T>): Promise<T>;
+};
+
+type ClaimedInventoryRow = {
+  id: string;
+};
+
+export async function createOrderWithClient<TTx extends OrderTransactionClient>(
+  client: OrderTransactionRunner<TTx>,
+  input: CreateOrderInput
+) {
   if (!Number.isInteger(input.quantity) || input.quantity <= 0) {
     throw new Error("Quantity must be positive");
   }
@@ -27,20 +82,6 @@ export async function createOrderWithClient(client: PrismaClient, input: CreateO
 
     if (!product || !product.enabled) {
       throw new Error("Product is unavailable");
-    }
-
-    const availableInventory = await tx.inventoryItem.findMany({
-      where: {
-        productId: product.id,
-        status: InventoryStatus.AVAILABLE
-      },
-      orderBy: { createdAt: "asc" },
-      take: input.quantity,
-      select: { id: true }
-    });
-
-    if (availableInventory.length < input.quantity) {
-      throw new Error("Insufficient inventory");
     }
 
     const subtotal = new Prisma.Decimal(product.price).mul(input.quantity);
@@ -73,19 +114,15 @@ export async function createOrderWithClient(client: PrismaClient, input: CreateO
       }
     });
 
-    const lockedInventory = await tx.inventoryItem.updateMany({
-      where: {
-        id: { in: availableInventory.map((item) => item.id) },
-        status: InventoryStatus.AVAILABLE
-      },
-      data: {
-        status: InventoryStatus.LOCKED,
-        orderId: order.id,
-        lockedAt: new Date()
-      }
+    const lockedAt = new Date();
+    const lockedInventory = await claimInventory(tx, {
+      productId: product.id,
+      orderId: order.id,
+      quantity: input.quantity,
+      lockedAt
     });
 
-    if (lockedInventory.count !== input.quantity) {
+    if (lockedInventory.length !== input.quantity) {
       throw new Error("Insufficient inventory");
     }
 
@@ -95,8 +132,37 @@ export async function createOrderWithClient(client: PrismaClient, input: CreateO
   });
 }
 
+async function claimInventory(
+  tx: OrderTransactionClient,
+  input: {
+    productId: string;
+    orderId: string;
+    quantity: number;
+    lockedAt: Date;
+  }
+) {
+  return tx.$queryRaw<ClaimedInventoryRow[]>(Prisma.sql`
+    WITH picked AS (
+      SELECT "id"
+      FROM "InventoryItem"
+      WHERE "productId" = ${input.productId}
+        AND "status" = ${InventoryStatus.AVAILABLE}::"InventoryStatus"
+      ORDER BY "createdAt" ASC
+      FOR UPDATE SKIP LOCKED
+      LIMIT ${input.quantity}
+    )
+    UPDATE "InventoryItem"
+    SET "status" = ${InventoryStatus.LOCKED}::"InventoryStatus",
+        "orderId" = ${input.orderId},
+        "lockedAt" = ${input.lockedAt},
+        "updatedAt" = ${input.lockedAt}
+    WHERE "id" IN (SELECT "id" FROM picked)
+    RETURNING "id"
+  `);
+}
+
 async function syncProductStock(
-  tx: Pick<PrismaClient, "inventoryItem" | "product">,
+  tx: Pick<OrderTransactionClient, "inventoryItem" | "product">,
   productId: string
 ) {
   const availableCount = await tx.inventoryItem.count({

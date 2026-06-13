@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createLinkString, signEpayParams, verifyEpayNotify } from "../../src/lib/payments/epay";
+import { Prisma } from "@prisma/client";
+import {
+  buildEpaySubmitFields,
+  createLinkString,
+  signEpayParams,
+  verifyEpayNotify
+} from "../../src/lib/payments/epay";
 
 describe("EPay helpers", () => {
   it("signs request parameters by sorted key order", () => {
@@ -44,5 +50,22 @@ describe("EPay helpers", () => {
         "secret"
       )
     ).toBe(false);
+  });
+
+  it("builds submit fields with fixed two-decimal money", () => {
+    const fields = buildEpaySubmitFields(
+      {
+        orderNo: "DJ1",
+        total: new Prisma.Decimal("9.00"),
+        items: [{ productTitle: "Test Product" }]
+      },
+      { pid: "1000", key: "secret", type: "alipay", sitename: "Card Shop" },
+      { notifyUrl: "https://example.com/notify", returnUrl: "https://example.com/return" }
+    );
+
+    expect(fields.money).toBe("9.00");
+    expect(fields.name).toBe("Test Product");
+    expect(fields.sign_type).toBe("MD5");
+    expect(fields.sign).toBe(signEpayParams({ ...fields, sign: undefined, sign_type: undefined }, "secret"));
   });
 });

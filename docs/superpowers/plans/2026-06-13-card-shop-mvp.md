@@ -1,6 +1,6 @@
-# Card Shop MVP Implementation Plan
+﻿# Card Shop MVP Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Build a deployable digital card shop with public storefront, admin management, order creation, inventory delivery, and EPay-compatible payment callbacks.
 
@@ -60,7 +60,7 @@
 - Create: `.gitignore`
 - Create: `.env.example`
 
-- [ ] **Step 1: Create project metadata and scripts**
+- [x] **Step 1: Create project metadata and scripts**
 
 Create `package.json`:
 
@@ -111,7 +111,7 @@ Create `package.json`:
 }
 ```
 
-- [ ] **Step 2: Create framework config**
+- [x] **Step 2: Create framework config**
 
 Create `next.config.ts`:
 
@@ -157,7 +157,7 @@ Create `tsconfig.json`:
 }
 ```
 
-- [ ] **Step 3: Create styling config**
+- [x] **Step 3: Create styling config**
 
 Create `tailwind.config.ts`:
 
@@ -196,7 +196,7 @@ const config = {
 export default config;
 ```
 
-- [ ] **Step 4: Create root layout and CSS**
+- [x] **Step 4: Create root layout and CSS**
 
 Create `src/app/layout.tsx`:
 
@@ -250,7 +250,7 @@ a {
 }
 ```
 
-- [ ] **Step 5: Create environment and ignore files**
+- [x] **Step 5: Create environment and ignore files**
 
 Create `.env.example`:
 
@@ -274,19 +274,19 @@ coverage
 *.log
 ```
 
-- [ ] **Step 6: Install dependencies**
+- [x] **Step 6: Install dependencies**
 
 Run: `npm install`
 
 Expected: dependencies install and `package-lock.json` is created.
 
-- [ ] **Step 7: Run typecheck**
+- [x] **Step 7: Run typecheck**
 
 Run: `npm run typecheck`
 
 Expected: TypeScript exits successfully.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 Run:
 
@@ -306,7 +306,7 @@ Expected: scaffold files committed.
 - Create: `prisma/seed.ts`
 - Create: `src/lib/db.ts`
 
-- [ ] **Step 1: Create Prisma schema**
+- [x] **Step 1: Create Prisma schema**
 
 Create `prisma/schema.prisma` with enums and models for `AdminUser`, `Category`, `Product`, `InventoryItem`, `Order`, `OrderItem`, `PaymentChannel`, `PaymentRecord`, `Coupon`, `Announcement`, `SupportMessage`, and `SiteSetting`.
 
@@ -344,7 +344,7 @@ The schema must include:
 - Payment record relation to order and payment channel.
 - JSON `PaymentChannel.config` for provider credentials.
 
-- [ ] **Step 2: Create Prisma client singleton**
+- [x] **Step 2: Create Prisma client singleton**
 
 Create `src/lib/db.ts`:
 
@@ -366,7 +366,7 @@ if (process.env.NODE_ENV !== "production") {
 }
 ```
 
-- [ ] **Step 3: Create seed script**
+- [x] **Step 3: Create seed script**
 
 Create `prisma/seed.ts` that:
 
@@ -390,7 +390,7 @@ Run: `npm run db:seed`
 
 Expected: sample admin, categories, products, inventory, and settings exist.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Run:
 
@@ -414,7 +414,7 @@ Expected: database foundation committed.
 - Create: `tests/payments/epay.test.ts`
 - Create: `tests/orders/deliver-order.test.ts`
 
-- [ ] **Step 1: Write EPay tests**
+- [x] **Step 1: Write EPay tests**
 
 Create `tests/payments/epay.test.ts` covering:
 
@@ -431,7 +431,7 @@ expect(signEpayParams({ money: "9.00", name: "Test", out_trade_no: "DJ1", pid: "
 
 Calculate the exact expected value in the implementation step and lock it in.
 
-- [ ] **Step 2: Implement EPay helpers**
+- [x] **Step 2: Implement EPay helpers**
 
 Create `src/lib/payments/epay.ts`:
 
@@ -442,7 +442,7 @@ Create `src/lib/payments/epay.ts`:
 
 Implementation must use Node `crypto.createHash("md5")`.
 
-- [ ] **Step 3: Write delivery tests**
+- [x] **Step 3: Write delivery tests**
 
 Create `tests/orders/deliver-order.test.ts` covering:
 
@@ -450,7 +450,7 @@ Create `tests/orders/deliver-order.test.ts` covering:
 - Re-running delivery for the same order does not deliver extra inventory.
 - Delivery fails when available inventory is insufficient.
 
-- [ ] **Step 4: Implement password and order helpers**
+- [x] **Step 4: Implement password and order helpers**
 
 Create `src/lib/auth/password.ts`:
 
@@ -468,7 +468,7 @@ export function verifyPassword(value: string, hash: string) {
 
 Create `src/lib/orders/order-number.ts` with order numbers shaped like `DJYYYYMMDDHHmmssXXXX`.
 
-- [ ] **Step 5: Implement order creation**
+- [x] **Step 5: Implement order creation**
 
 Create `src/lib/orders/create-order.ts`:
 
@@ -479,7 +479,7 @@ Create `src/lib/orders/create-order.ts`:
 - Create `Order` and `OrderItem`.
 - Lock the needed inventory rows in a transaction.
 
-- [ ] **Step 6: Implement delivery**
+- [x] **Step 6: Implement delivery**
 
 Create `src/lib/orders/deliver-order.ts`:
 
@@ -489,13 +489,13 @@ Create `src/lib/orders/deliver-order.ts`:
 - Store delivered secrets in order delivery summary.
 - Set order status to `DELIVERED`.
 
-- [ ] **Step 7: Run tests**
+- [x] **Step 7: Run tests**
 
 Run: `npm test`
 
 Expected: EPay and delivery tests pass.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 Run:
 
@@ -522,7 +522,7 @@ Expected: core services committed.
 - Create: `src/app/api/payments/epay/notify/route.ts`
 - Create: `src/app/api/payments/epay/callback/route.ts`
 
-- [ ] **Step 1: Create shared validation schemas**
+- [x] **Step 1: Create shared validation schemas**
 
 Create `src/lib/validation.ts` with Zod schemas for:
 
@@ -532,7 +532,7 @@ Create `src/lib/validation.ts` with Zod schemas for:
 - support message request
 - admin login request
 
-- [ ] **Step 2: Add price route**
+- [x] **Step 2: Add price route**
 
 `POST /api/price` accepts product id, quantity, coupon code, and returns:
 
@@ -545,7 +545,7 @@ Create `src/lib/validation.ts` with Zod schemas for:
 }
 ```
 
-- [ ] **Step 3: Add order creation route**
+- [x] **Step 3: Add order creation route**
 
 `POST /api/orders` calls `createOrder` and returns:
 
@@ -556,7 +556,7 @@ Create `src/lib/validation.ts` with Zod schemas for:
 }
 ```
 
-- [ ] **Step 4: Add status route**
+- [x] **Step 4: Add status route**
 
 `GET /api/orders/:orderNo/status` returns:
 
@@ -564,21 +564,21 @@ Create `src/lib/validation.ts` with Zod schemas for:
 {
   "paid": false,
   "status": "PENDING",
-  "statusText": "待支付"
+  "statusText": "寰呮敮浠?
 }
 ```
 
-- [ ] **Step 5: Add search and support routes**
+- [x] **Step 5: Add search and support routes**
 
 Order search supports order number or email plus query password.
 
 Support route stores name/contact/message and source page.
 
-- [ ] **Step 6: Add manual payment route**
+- [x] **Step 6: Add manual payment route**
 
 Manual payment route is enabled only for `manual` channel and marks an order paid/delivered for development.
 
-- [ ] **Step 7: Add EPay routes**
+- [x] **Step 7: Add EPay routes**
 
 EPay pay route builds a provider submit form or URL.
 
@@ -593,7 +593,7 @@ EPay notify route:
 
 EPay callback redirects to `/orders/:orderNo`.
 
-- [ ] **Step 8: Run typecheck and tests**
+- [x] **Step 8: Run typecheck and tests**
 
 Run:
 
@@ -604,7 +604,7 @@ npm test
 
 Expected: both pass.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 Run:
 
@@ -630,7 +630,7 @@ Expected: API routes committed.
 - Create: `src/app/orders/[orderNo]/page.tsx`
 - Create: `src/app/order-search/page.tsx`
 
-- [ ] **Step 1: Build reusable storefront components**
+- [x] **Step 1: Build reusable storefront components**
 
 Create components matching the design direction:
 
@@ -640,19 +640,19 @@ Create components matching the design direction:
 - Product cards with icon, title, description, price, and stock.
 - Fixed support widget.
 
-- [ ] **Step 2: Build homepage**
+- [x] **Step 2: Build homepage**
 
 `src/app/page.tsx` loads settings, categories, products, and recent delivered orders. It renders announcement, categories, and grouped product cards.
 
-- [ ] **Step 3: Build product purchase page**
+- [x] **Step 3: Build product purchase page**
 
 Product page renders a form with quantity, email, query password, coupon, and payment channel. On submit it posts to `/api/orders` and redirects to `/checkout/:orderNo`.
 
-- [ ] **Step 4: Build cashier page**
+- [x] **Step 4: Build cashier page**
 
 Cashier page loads order summary and polls `/api/orders/:orderNo/status` every five seconds. It shows manual test payment button when manual channel is selected.
 
-- [ ] **Step 5: Build order detail and search pages**
+- [x] **Step 5: Build order detail and search pages**
 
 Order detail displays status and delivered secrets only after correct lookup path. Search page supports order number and email/password lookup.
 
@@ -670,7 +670,7 @@ Expected:
 - Manual payment completes delivery.
 - Order detail shows delivered card secret.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 Run:
 
@@ -693,7 +693,7 @@ Expected: storefront committed.
 - Create: `src/app/api/admin/login/route.ts`
 - Create: `src/app/api/admin/logout/route.ts`
 
-- [ ] **Step 1: Implement session helpers**
+- [x] **Step 1: Implement session helpers**
 
 Session helper must:
 
@@ -702,17 +702,17 @@ Session helper must:
 - Read current admin from request cookies.
 - Redirect unauthenticated admin page requests to `/admin/login`.
 
-- [ ] **Step 2: Implement login/logout APIs**
+- [x] **Step 2: Implement login/logout APIs**
 
 Login route validates email/password and sets cookie.
 
 Logout route clears cookie.
 
-- [ ] **Step 3: Build admin shell**
+- [x] **Step 3: Build admin shell**
 
 Admin layout uses a sidebar with Dashboard, Categories, Products, Inventory, Orders, Settings, Support.
 
-- [ ] **Step 4: Build dashboard**
+- [x] **Step 4: Build dashboard**
 
 Dashboard shows counts and recent orders.
 
@@ -729,7 +729,7 @@ Expected:
 - Dashboard renders.
 - Logout clears session.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Run:
 
@@ -756,23 +756,23 @@ Expected: admin auth committed.
 - Create: `src/app/api/admin/orders/route.ts`
 - Create: `src/app/api/admin/settings/route.ts`
 
-- [ ] **Step 1: Implement category admin**
+- [x] **Step 1: Implement category admin**
 
 CRUD categories with title, sort, and enabled state.
 
-- [ ] **Step 2: Implement product admin**
+- [x] **Step 2: Implement product admin**
 
 CRUD products with category, title, description, price, original price, icon color, enabled state.
 
-- [ ] **Step 3: Implement inventory admin**
+- [x] **Step 3: Implement inventory admin**
 
 Inventory page imports newline-separated secrets for a selected product. It shows available, locked, delivered, and invalid counts.
 
-- [ ] **Step 4: Implement order admin**
+- [x] **Step 4: Implement order admin**
 
 Order page filters by order number, email, and status. Detail view shows payment records and delivered inventory.
 
-- [ ] **Step 5: Implement settings admin**
+- [x] **Step 5: Implement settings admin**
 
 Settings page manages shop name, announcement, support text, and payment channel config.
 
@@ -787,7 +787,7 @@ Run through:
 - Mark paid manually.
 - Confirm order delivery in admin.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 Run:
 
@@ -808,11 +808,11 @@ Expected: admin modules committed.
 - Create: `nginx/default.conf.example`
 - Create: `README.md`
 
-- [ ] **Step 1: Create Dockerfile**
+- [x] **Step 1: Create Dockerfile**
 
 Dockerfile builds the Next.js app, runs `prisma generate`, and starts `npm run start`.
 
-- [ ] **Step 2: Create Docker Compose**
+- [x] **Step 2: Create Docker Compose**
 
 Compose includes:
 
@@ -820,7 +820,7 @@ Compose includes:
 - `app` service with `DATABASE_URL`, `SESSION_SECRET`, and `NEXT_PUBLIC_SITE_URL`.
 - Optional `nginx` service using `nginx/default.conf.example`.
 
-- [ ] **Step 3: Create README**
+- [x] **Step 3: Create README**
 
 README documents:
 
@@ -842,7 +842,7 @@ docker compose config
 
 Expected: Next.js build succeeds and compose config validates.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Run:
 
@@ -881,3 +881,17 @@ Type consistency:
 - Payment channel type names are `manual` and `epay`.
 - Order identifier is consistently `orderNo`.
 - Payment callback success text is consistently `success`.
+
+## Execution Status
+
+Completed in code:
+
+- Public storefront, order APIs, payment APIs, admin authentication, admin management pages, and deployment assets are implemented.
+- Task commit steps after Task 3 were completed as a consolidated MVP commit instead of separate task commits.
+- Verification passed: `npm run typecheck`, `npm test`, and `npm run build`.
+
+Environment-blocked checks:
+
+- Local PostgreSQL migration/seed verification was not run because this workspace has no `.env` with `DATABASE_URL` and no local PostgreSQL/`psql` command available.
+- Full browser order flow and admin CRUD flow were not run against a real database for the same reason.
+- `docker compose config` was not run because the `docker` command is not available on this machine.

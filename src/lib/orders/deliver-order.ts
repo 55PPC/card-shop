@@ -1,4 +1,4 @@
-import { InventoryStatus, OrderStatus, type PrismaClient } from "@prisma/client";
+import { InventoryStatus, OrderStatus, Prisma } from "@prisma/client";
 import { prisma } from "../db";
 
 type DeliveryItem = {
@@ -31,16 +31,33 @@ type DeliveryClient = {
 
 type DeliveryTransactionClient = {
   order: {
-    findUnique(args: unknown): Promise<DeliverableOrder | null>;
-    update(args: unknown): Promise<DeliverableOrder>;
+    findUnique(args: {
+      where: { id?: string; orderNo?: string };
+      include: { items: true };
+    }): Promise<DeliverableOrder | null>;
+    updateMany(args: {
+      where: { id: string; status?: OrderStatus };
+      data: {
+        status: OrderStatus;
+        deliveredAt: Date;
+        deliveryItems: DeliveryItem[];
+        deliverySummary: string;
+      };
+    }): Promise<Prisma.BatchPayload>;
   };
   inventoryItem: {
-    findMany(args: unknown): Promise<InventoryRow[]>;
-    updateMany(args: unknown): Promise<unknown>;
-    count?(args: unknown): Promise<number>;
+    findMany(args: {
+      where: { orderId?: string; productId?: string; status?: InventoryStatus };
+      orderBy?: { createdAt: "asc" };
+    }): Promise<InventoryRow[]>;
+    updateMany(args: {
+      where: { id: { in: string[] }; status?: InventoryStatus };
+      data: { status: InventoryStatus; deliveredAt: Date };
+    }): Promise<Prisma.BatchPayload>;
+    count(args: { where: { productId: string; status: InventoryStatus } }): Promise<number>;
   };
   product: {
-    update(args: unknown): Promise<unknown>;
+    update(args: { where: { id: string }; data: { stock: number } }): Promise<unknown>;
   };
 };
 
@@ -87,7 +104,7 @@ export async function deliverOrderWithClient(client: DeliveryClient, orderNo: st
     }));
     const deliveredAt = new Date();
 
-    await tx.inventoryItem.updateMany({
+    const updatedInventory = await tx.inventoryItem.updateMany({
       where: {
         id: { in: lockedInventory.slice(0, expectedQuantity).map((item) => item.id) },
         status: InventoryStatus.LOCKED
@@ -98,18 +115,37 @@ export async function deliverOrderWithClient(client: DeliveryClient, orderNo: st
       }
     });
 
+    if (updatedInventory.count !== expectedQuantity) {
+      throw new Error("Inventory delivery race detected");
+    }
+
     const deliverySummary = summarizeDelivery(order.items);
 
-    const deliveredOrder = await tx.order.update({
-      where: { id: order.id },
+    const updatedOrder = await tx.order.updateMany({
+      where: {
+        id: order.id,
+        status: OrderStatus.PAID
+      },
       data: {
         status: OrderStatus.DELIVERED,
         deliveredAt,
         deliveryItems,
         deliverySummary
-      },
+      }
+    });
+
+    if (updatedOrder.count !== 1) {
+      throw new Error("Order delivery race detected");
+    }
+
+    const deliveredOrder = await tx.order.findUnique({
+      where: { id: order.id },
       include: { items: true }
     });
+
+    if (!deliveredOrder) {
+      throw new Error("Delivered order not found");
+    }
 
     await syncProductStocks(tx, order.items.map((item) => item.productId));
 
@@ -152,21 +188,12 @@ function summarizeDelivery(items: DeliverableOrder["items"]) {
 
 async function syncProductStocks(tx: DeliveryTransactionClient, productIds: string[]) {
   for (const productId of Array.from(new Set(productIds))) {
-    const stock = tx.inventoryItem.count
-      ? await tx.inventoryItem.count({
-          where: {
-            productId,
-            status: InventoryStatus.AVAILABLE
-          }
-        })
-      : (
-          await tx.inventoryItem.findMany({
-            where: {
-              productId,
-              status: InventoryStatus.AVAILABLE
-            }
-          })
-        ).length;
+    const stock = await tx.inventoryItem.count({
+      where: {
+        productId,
+        status: InventoryStatus.AVAILABLE
+      }
+    });
 
     await tx.product.update({
       where: { id: productId },

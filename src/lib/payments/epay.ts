@@ -52,11 +52,15 @@ export function verifyEpayNotify(params: EpayParams, key: string) {
   return signEpayParams(params, key).toLowerCase() === providedSign.toLowerCase();
 }
 
+function formatMoney(value: Pick<Order, "total">["total"]) {
+  return value.toFixed(2);
+}
+
 export function buildEpaySubmitFields(
   order: Pick<Order, "orderNo" | "total"> & { items?: Array<{ productTitle: string }> },
   channelConfig: EpayChannelConfig,
   urls: EpaySubmitUrls
-) {
+): EpayParams & { sign: string; sign_type: "MD5" } {
   const fields: EpayParams = {
     pid: channelConfig.pid,
     type: channelConfig.type ?? "alipay",
@@ -64,7 +68,7 @@ export function buildEpaySubmitFields(
     notify_url: urls.notifyUrl,
     return_url: urls.returnUrl,
     name: order.items?.[0]?.productTitle ?? `Order ${order.orderNo}`,
-    money: order.total.toString(),
+    money: formatMoney(order.total),
     sitename: channelConfig.sitename ?? "Card Shop"
   };
 

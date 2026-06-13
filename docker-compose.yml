@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: card_shop
+      POSTGRES_USER: card_shop
+      POSTGRES_PASSWORD: card_shop
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://card_shop:card_shop@postgres:5432/card_shop?schema=public
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASSWORD: change-me-now
+      SESSION_SECRET: replace-with-a-long-random-secret
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    ports:
+      - "3000:3000"
+    command: sh -c "npm run db:deploy && npm run db:seed && npm run start"
+
+volumes:
+  postgres_data:
